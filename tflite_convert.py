@@ -141,6 +141,8 @@ if C.network == 'resnet50':
 	num_features = 1024
 elif C.network =="mobilenetv2":
 	num_features = 320
+elif C.network =="thundernetv1":
+	num_features = 256
 else:
 	# may need to fix this up with your backbone..!
 	print("backbone is not resnet50. number of features chosen is 512")
@@ -156,7 +158,7 @@ else:
 
 img_input = Input(shape=(320,320,3))
 roi_input = Input(shape=(C.num_rois, 4))
-feature_map_input = Input(shape=(20,20,512))
+feature_map_input = Input(shape=(20,20,num_features))
 
 # define the base network (resnet here, can be VGG, Inception, etc)
 shared_layers = nn.nn_base(img_input)
