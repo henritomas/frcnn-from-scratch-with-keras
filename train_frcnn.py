@@ -9,18 +9,18 @@ import pickle
 import os
 import pandas as pd
 
-from keras import backend as K
-from keras.optimizers import Adam, SGD, RMSprop
-from keras.layers import Input
-from keras.models import Model, load_model
-from keras_frcnn import config, data_generators
+from tensorflow.keras import backend as K
+from tensorflow.keras.optimizers import Adam, SGD, RMSprop
+from tensorflow.keras.layers import Input
+from tensorflow.keras.models import Model
+from keras_frcnn import data_generators
+from keras_frcnn import config
 from keras_frcnn import losses as losses
 import keras_frcnn.roi_helpers as roi_helpers
-from keras.utils import generic_utils
+from tensorflow.keras.utils import Progbar
 
-if 'tensorflow' == K.backend():
-    import tensorflow as tf
-from keras.backend.tensorflow_backend import set_session
+import tensorflow as tf
+from tensorflow.keras.backend import set_session
 config2 = tf.ConfigProto()
 config2.gpu_options.allow_growth = True
 set_session(tf.Session(config=config2))
@@ -51,6 +51,7 @@ parser.add_option("--load", dest="load", help="What model to load", default=None
 parser.add_option("--dataset", dest="dataset", help="name of the dataset", default="voc")
 parser.add_option("--cat", dest="cat", help="categroy to train on. default train on all cats.", default=None)
 parser.add_option("--lr", dest="lr", help="learn rate", type=float, default=1e-3)
+#parser.add_option("--lr", dest="lr", help="learn rate", type=float, default=1e-5)
 
 (options, args) = parser.parse_args()
 
@@ -148,13 +149,11 @@ train_imgs = all_imgs
 print('Num train samples {}'.format(len(train_imgs)))
 #print('Num val samples {}'.format(len(val_imgs)))
 
-data_gen_train = data_generators.get_anchor_gt(train_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
+data_gen_train = data_generators.get_anchor_gt(train_imgs, classes_count, C, nn.get_img_output_length, 'tf', mode='train')
 #data_gen_val = data_generators.get_anchor_gt(val_imgs, classes_count, C, nn.get_img_output_length,K.image_dim_ordering(), mode='val')
 
-if K.image_dim_ordering() == 'th':
-    input_shape_img = (3, None, None)
-else:
-    input_shape_img = (None, None, 3)
+# set input shape
+input_shape_img = (None, None, 3)
 
 img_input = Input(shape=input_shape_img)
 roi_input = Input(shape=(None, 4))
@@ -244,7 +243,7 @@ model_rpn.compile(optimizer=optimizer, loss=[losses.rpn_loss_cls(num_anchors), l
 model_classifier.compile(optimizer=optimizer_classifier, loss=[losses.class_loss_cls, losses.class_loss_regr(len(classes_count)-1)], metrics={'dense_class_{}'.format(len(classes_count)): 'accuracy'})
 model_all.compile(optimizer='sgd', loss='mae')
 
-#epoch_length = int(options.epoch_length)
+epoch_length = int(options.epoch_length)
 epoch_length = len(train_imgs)
 num_epochs = int(options.num_epochs)
 iter_num = 0
@@ -272,11 +271,12 @@ print('Starting training')
 vis = True
 
 for epoch_num in range(num_epochs):
-	progbar = generic_utils.Progbar(epoch_length)
+	progbar = Progbar(epoch_length)
 	print('Epoch {}/{}'.format(r_epochs + 1, total_epochs))
 	r_epochs += 1
     
-	# first 3 epoch is warmup
+	# first 3 epoch is warmup 
+	## ONLY FOR SGD : it starts with 1e-3 for the 1st three epochs, then slows down
 	if epoch_num == 3 and options.rpn_weight_path is not None:
 		K.set_value(model_rpn.optimizer.lr, options.lr/30)
 		K.set_value(model_classifier.optimizer.lr, options.lr/3)
@@ -294,7 +294,7 @@ for epoch_num in range(num_epochs):
 			loss_rpn = model_rpn.train_on_batch(X, Y)
 
 			P_rpn = model_rpn.predict_on_batch(X)
-			R = roi_helpers.rpn_to_roi(P_rpn[0], P_rpn[1], C, K.image_dim_ordering(), use_regr=True, overlap_thresh=0.5, max_boxes=300)
+			R = roi_helpers.rpn_to_roi(P_rpn[0], P_rpn[1], C, 'tf', use_regr=True, overlap_thresh=0.5, max_boxes=300)
 			# note: calc_iou converts from (x1,y1,x2,y2) to (x,y,w,h) format
 			X2, Y1, Y2, IouS = roi_helpers.calc_iou(R, img_data, C, class_mapping)
 

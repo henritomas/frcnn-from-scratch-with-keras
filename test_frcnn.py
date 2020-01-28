@@ -7,11 +7,11 @@ import pickle
 from optparse import OptionParser
 import time
 from keras_frcnn import config
-from keras import backend as K
-from keras.layers import Input
-from keras.models import Model
+from tensorflow.keras import backend as K
+from tensorflow.keras.layers import Input
+from tensorflow.keras.models import Model
 from keras_frcnn import roi_helpers
-from keras.applications.mobilenet import preprocess_input
+#from keras.applications.mobilenet import preprocess_input
 
 from tensorflow.compat.v1 import ConfigProto
 from tensorflow.compat.v1 import InteractiveSession
@@ -152,12 +152,8 @@ else:
 	print("backbone is not resnet50. number of features chosen is 512")
 	num_features = 512
 
-if K.image_dim_ordering() == 'th':
-	input_shape_img = (3, None, None)
-	input_shape_features = (num_features, None, None)
-else:
-	input_shape_img = (None, None, 3)
-	input_shape_features = (None, None, num_features)
+input_shape_img = (None, None, 3)
+input_shape_features = (None, None, num_features)
 
 
 img_input = Input(shape=input_shape_img)
@@ -210,14 +206,13 @@ for idx, img_name in enumerate(sorted(os.listdir(img_path))):
     # preprocess image
 	X, ratio_w, ratio_h = format_img(img, C)
 	img_scaled = (np.transpose(X[0,:,:,:],(1,2,0)) + 127.5).astype('uint8')
-	if K.image_dim_ordering() == 'tf':
-		X = np.transpose(X, (0, 2, 3, 1))
+	X = np.transpose(X, (0, 2, 3, 1))
 	# get the feature maps and output from the RPN
 	print(X.shape)
 	[Y1, Y2, F] = model_rpn.predict(X)
 	
 
-	R = roi_helpers.rpn_to_roi(Y1, Y2, C, K.image_dim_ordering(), overlap_thresh=0.3)
+	R = roi_helpers.rpn_to_roi(Y1, Y2, C, 'tf', overlap_thresh=0.3)
 	#print(R.shape)
     
 	# convert from (x1,y1,x2,y2) to (x,y,w,h)

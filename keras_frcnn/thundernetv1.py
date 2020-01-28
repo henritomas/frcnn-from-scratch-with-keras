@@ -9,14 +9,14 @@ from __future__ import division
 
 import warnings
 
-from keras.models import Model
-from keras import layers
-from keras.layers import Flatten, Dense, Input, Conv2D, MaxPooling2D, Dropout, BatchNormalization, Add, ReLU
-from keras.layers import GlobalAveragePooling2D, GlobalMaxPooling2D, TimeDistributed
+from tensorflow.keras.models import Model
+from tensorflow.keras import layers
+from tensorflow.keras.layers import Flatten, Dense, Input, Conv2D, MaxPooling2D, Dropout, BatchNormalization, Add, ReLU
+from tensorflow.keras.layers import GlobalAveragePooling2D, GlobalMaxPooling2D, TimeDistributed
 #from keras.engine.topology import get_source_inputs
 #from keras.utils import layer_utils
 #from keras.utils.data_utils import get_file
-from keras import backend as K
+from tensorflow.keras import backend as K
 from keras_frcnn.RoiPoolingConv import RoiPoolingConv, PSRoiAlignPooling
 from keras_frcnn.FixedBatchNormalization import FixedBatchNormalization
 import tensorflow as tf
@@ -74,11 +74,7 @@ def spatial_attention_module(base_layers):
     
 def get_weight_path():
     
-    if K.image_dim_ordering() == 'th':
-        print('pretrained weights not available for VGG with theano backend')
-        return
-    else:
-        return './pretrain/mobilenet_1_0_224_tf.h5'
+    return './pretrain/mobilenet_1_0_224_tf.h5'
 
 
 def get_img_output_length(width, height):
@@ -91,23 +87,16 @@ def nn_base(input_tensor=None, trainable=False):
 
 
      #Determine proper input shape
-    if K.image_dim_ordering() == 'th':
-        input_shape = (3, None, None)
-    else:
-        input_shape = (None, None, 3)
+    input_shape = (None, None, 3)
 
     if input_tensor is None:
         img_input = Input(shape=input_shape)
     else:
-        if not K.is_keras_tensor(input_tensor):
-            img_input = Input(tensor=input_tensor, shape=input_shape)
-        else:
-            img_input = input_tensor
+		#assumes input_tensor is a keras_tensor
+        img_input = input_tensor
 
-    if K.image_dim_ordering() == 'tf':
-        bn_axis = 3
-    else:
-        bn_axis = 1
+
+    bn_axis = 3
     
     # for testing..
     alpha = 1

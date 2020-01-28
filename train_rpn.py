@@ -11,20 +11,21 @@ from optparse import OptionParser
 import pickle
 import os
 
-from keras import backend as K
-from keras.optimizers import Adam, SGD, RMSprop
-from keras.layers import Input
-from keras.models import Model
+from tensorflow.keras import backend as K
+from tensorflow.keras.optimizers import Adam, SGD, RMSprop
+from tensorflow.keras.layers import Input
+from tensorflow.keras.models import Model
 from keras_frcnn import data_generators
 from keras_frcnn import config
 from keras_frcnn import losses as losses
 import keras_frcnn.roi_helpers as roi_helpers
-from keras.utils import generic_utils
+from tensorflow.keras.utils import Progbar
+from tensorflow.keras.callbacks import ModelCheckpoint
 
 # gpu setting
-if 'tensorflow' == K.backend():
-    import tensorflow as tf
-from keras.backend.tensorflow_backend import set_session
+
+import tensorflow as tf
+from tensorflow.keras.backend import set_session
 config2 = tf.ConfigProto()
 config2.gpu_options.allow_growth = True
 set_session(tf.Session(config=config2))
@@ -168,8 +169,8 @@ print('Num train samples {}'.format(len(train_imgs)))
 print('Num val samples {}'.format(len(val_imgs)))
 
 
-data_gen_train = data_generators.get_anchor_gt(train_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
-data_gen_val = data_generators.get_anchor_gt(val_imgs, classes_count, C, nn.get_img_output_length,K.image_dim_ordering(), mode='val')
+data_gen_train = data_generators.get_anchor_gt(train_imgs, classes_count, C, nn.get_img_output_length, 'tf', mode='train')
+data_gen_val = data_generators.get_anchor_gt(val_imgs, classes_count, C, nn.get_img_output_length,'tf', mode='val')
 
 # set input shape
 input_shape_img = (None, None, 3)
@@ -234,7 +235,7 @@ vis = True
 # X2, Y1, Y2, IouS = roi_helpers.calc_iou(R, img_data, C, class_mapping)
 # this will output the binding box axis. [x1,x2,y1,y2].
 
-Callbacks=keras.callbacks.ModelCheckpoint("./models/rpn/rpn."+options.network+".weights.{epoch:02d}-{loss:.2f}.hdf5", monitor='loss', verbose=1, save_best_only=True, save_weights_only=True, mode='auto', period=4)
+Callbacks=ModelCheckpoint("./models/rpn/rpn."+options.network+".weights.{epoch:02d}-{loss:.2f}.hdf5", monitor='loss', verbose=1, save_best_only=True, save_weights_only=True, mode='auto', period=4)
 callback=[Callbacks]
 if len(val_imgs) == 0:
     # assuming you don't have validation data

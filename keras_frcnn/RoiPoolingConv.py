@@ -1,9 +1,8 @@
 #from tensorflow.keras.engine.topology import Layer
-from keras.layers import Layer
-import keras.backend as K
+from tensorflow.keras.layers import Layer
+import tensorflow.keras.backend as K
 
-if K.backend() == 'tensorflow':
-    import tensorflow as tf
+import tensorflow as tf
 
 
 #PSROI ALign from https://github.com/mohhao/TF-Keras-ThunderNet/blob/master/thundernet/layers/detector.py
@@ -128,7 +127,7 @@ class RoiPoolingConv(Layer):
     '''
     def __init__(self, pool_size, num_rois, **kwargs):
 
-        self.dim_ordering = K.image_dim_ordering()
+        self.dim_ordering = 'tf'
         assert self.dim_ordering in {'tf', 'th'}, 'dim_ordering must be in {tf, th}'
 
         self.pool_size = pool_size
